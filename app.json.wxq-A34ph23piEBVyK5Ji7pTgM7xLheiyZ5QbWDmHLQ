@@ -2,21 +2,10 @@
   "expo": {
     "name": "Timer",
     "slug": "timer",
-    "scheme": "timer",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "userInterfaceStyle": "light",
-    "plugins": [
-      [
-        "expo-build-properties",
-        {
-          "android": {
-            "forceDarkAllowed": false
-          }
-        }
-      ]
-    ],
     "splash": {
       "image": "./assets/images/splash.png",
       "resizeMode": "contain",
@@ -40,6 +29,9 @@
       "eas": {
         "projectId": "bb0b8c72-0747-475f-89ea-ee483a6fdfbe"
       }
-    }
+    },
+    "plugins": [
+      "expo-build-properties"
+    ]
   }
 }

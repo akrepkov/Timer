@@ -1,12 +1,26 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, Dimensions, TouchableOpacity, Image, ImageSourcePropType, Vibration, StatusBar } from 'react-native';
 import WheelPickerExpo from 'react-native-wheel-picker-expo';
+// import * as Notifications from 'expo-notifications';
+import { AppState } from 'react-native';
+// import BackgroundTimer from 'react-native-background-timer';
 
 
 const { width, height } = Dimensions.get('window');
 const cellWidth = width / 2;
 const cellHeight = height / 2;
 const responsiveFontSize = Math.round(width * 0.05);
+
+// Notifications.setNotificationHandler({
+//     handleNotification: async () => ({
+//         shouldShowAlert: true,
+//         shouldPlaySound: true,
+//         shouldSetBadge: false,
+//     }),
+// });
+
+
+
 type Egg = {
     id: number;
     name: string;
@@ -15,40 +29,84 @@ type Egg = {
 };
 
 const EggTypes = [
-    { id: 1, name: 'Soft', comment: 'Firm whites, runny yolk', time: 300, image: require('../assets/images/egg1.png') },
+    { id: 1, name: 'Soft', comment: 'Firm whites, runny yolk', time: 5, image: require('../assets/images/egg1.png') },
     { id: 2, name: 'Medium', comment: 'Fully set whites, creamy center', time: 420, image: require('../assets/images/egg2.png') },
     { id: 3, name: 'Hard', comment: 'Fully set whites and yolk', time: 540, image: require('../assets/images/egg3.png') },
     { id: 4, name: '', comment: '', time: 600, image: require('../assets/images/icon.png') },
 ];
-
-// const inputField = () => {
-//     const [value, setValue] = useState('');
-
-//     return (
-//         <TextInput
-//             editable
-//             multiline
-//             numberOfLines={4}
-//             maxLength={40}
-//             onChangeText={text => setValue(text)}
-//             value={value}
-//         />
-//     )
-// }
 
 export default function App() {
     const [activeEgg, setActiveEgg] = useState(0);
     const [secondsLeft, setSecondsLeft] = useState(0);
     const timerRef = useRef(0);
     const [customMinutes, setCustomMinutes] = useState(1);
+    const appState = useRef(AppState.currentState);
+    const [appStateVisible, setAppStateVisible] = useState(appState.current);
+    const [endTimer, setEndTimer] = useState(0);
+
+
+    const formatTime = (sec) => {
+        const min = Math.floor(sec / 60).toString().padStart(2, '0');
+        const secLeft = (sec % 60).toString().padStart(2, '0');
+        return `${min}:${secLeft}`;
+    };
+    //for printinh seconds
+    useEffect(() => {
+        console.log ("active 1: ", activeEgg)
+        if (activeEgg === 0) return; // no timer active
+        timerRef.current = setInterval(() => {
+            const now = Date.now();
+            const secondsRemaining = Math.round((endTimer - now) / 1000);
+            if (secondsRemaining <= 0) {
+                clearInterval(timerRef.current);
+                setSecondsLeft(0);
+                setActiveEgg(0);
+                setEndTimer(0);
+                console.log ("Vibrate 1")
+                // Vibration.vibrate(2000);
+            } else {
+                setSecondsLeft(secondsRemaining);
+            }
+        }, 1000);
+        return () => clearInterval(timerRef.current);
+    }, [activeEgg, endTimer]);
+
+    useEffect(() => {
+        if (activeEgg === 0) return; // no timer active
+        console.log ("active egg 2: ", activeEgg)
+        const subscription = AppState.addEventListener('change', nextAppState => {
+            if (appState.current.match(/inactive|background/) && nextAppState === 'active') {
+                // App comes to foreground, update secondsLeft immediately
+                const now = Date.now();
+                const secondsRemaining = Math.round((endTimer - now) / 1000);
+                console.log(appState, "appstate", secondsRemaining)
+                if (secondsRemaining < 0) {
+                    clearInterval(timerRef.current);
+                    setSecondsLeft(0);
+                    setActiveEgg(0);
+                    setEndTimer(0);
+                    console.log ("Vibrate 2")
+                    // Vibration.vibrate(2000);
+                } else {
+                    setSecondsLeft(secondsRemaining);
+                }
+            }
+            appState.current = nextAppState;
+            setAppStateVisible(nextAppState);
+        });
+        return () => subscription.remove();
+    }, [endTimer]);
+
 
     const startTimer = (egg: Egg) => {
         if (activeEgg === egg.id) {
+            // Stop current timer
             if (timerRef.current) {
                 clearInterval(timerRef.current);
             }
             setActiveEgg(0);
             setSecondsLeft(0);
+            setEndTimer(0);
             return;
         }
         let timeToSet = egg.time;
@@ -61,24 +119,9 @@ export default function App() {
         }
         setActiveEgg(egg.id);
         setSecondsLeft(timeToSet);
-        if (timerRef.current) {
-            clearInterval(timerRef.current);
-        }
-
-        timerRef.current = setInterval(() => {
-            setSecondsLeft(prev => {
-                if (prev <= 1) {
-                    clearInterval(timerRef.current!);
-                    Vibration.vibrate(2000);
-                    setTimeout(() => {
-                        setActiveEgg(0);
-                    }, 2000);
-                    return 0;
-                }
-                return prev - 1;
-            });
-        }, 1000);
+        setEndTimer(Date.now() + timeToSet * 1000); // Date.now() + milliseconds
     };
+
 
     useEffect(() => {
         return () => {
@@ -93,16 +136,11 @@ export default function App() {
     BEFORE the component unmounts (or before running the effect again).
     This is important to clean up things (like timers) early and prevent memory leaks.
     */
-    const formatTime = (sec) => {
-        const min = Math.floor(sec / 60).toString().padStart(2, '0');
-        const secLeft = (sec % 60).toString().padStart(2, '0');
-        return `${min}:${secLeft}`;
-    };
     return (
         <View style={styles.container}>
             <StatusBar backgroundColor="#dcc9b6" barStyle="light-content" />
             {EggTypes.map((egg) => (
-                <TouchableOpacity key={egg.id} style={styles.cell} onPress={() => startTimer(egg)}>
+                <TouchableOpacity key={egg.id} style={styles.cell} activeOpacity={0.5} onPress={() => startTimer(egg)}>
                     {activeEgg === egg.id ? (
                         secondsLeft > 0 ? (
                             <Text style={styles.timerText}>{formatTime(secondsLeft)}</Text>
@@ -112,17 +150,17 @@ export default function App() {
                     ) : (
                         <>{egg.id === 4 ? (
                             <>
-                                    <WheelPickerExpo
-                                        height={200}
-                                        width={120}
-                                        backgroundColor="#dcc9b6"
-                                        items={Array.from({ length: 60 }, (_, i) => ({
-                                            label: `${i + 1} min`,
-                                            value: i + 1
-                                        }))}
-                                        initialSelectedIndex={0}
-                                        onChange={({ item }) => setCustomMinutes(item.value)}
-                                    />
+                                <WheelPickerExpo
+                                    height={200}
+                                    width={120}
+                                    backgroundColor="#dcc9b6"
+                                    items={Array.from({ length: 60 }, (_, i) => ({
+                                        label: `${i + 1} min`,
+                                        value: i + 1
+                                    }))}
+                                    initialSelectedIndex={0}
+                                    onChange={({ item }) => setCustomMinutes(item.value)}
+                                />
                                 <View style={styles.rectangle}>
                                     <Text style={styles.text}>Confirm</Text>
                                 </View>
@@ -145,7 +183,7 @@ const styles = StyleSheet.create({
         flex: 1,
         flexDirection: 'row',
         flexWrap: 'wrap',
-        backgroundColor: '#9d684b',
+        backgroundColor: '#dcc9b6',
     },
     cell: {
         width: cellWidth,
@@ -153,7 +191,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         backgroundColor: '#dcc9b6',
-        borderColor: '#9d684b',
+        // borderColor: '#9d684b',
         borderWidth: 0.5,
     },
     cellText: {
@@ -172,7 +210,7 @@ const styles = StyleSheet.create({
     },
     image: {
         width: '80%',
-        height: '60%',
+        height: '50%',
         resizeMode: 'contain',
     },
     timerText: {
