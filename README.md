@@ -6,7 +6,7 @@
 ```
 2. Developed the app
   Created App.tsx (or App.js) with React Native components.
-  Defined egg timer buttons with images and timer logic using React hooks.
+  Defined egg timer buttons with custom images and timer logic using React hooks.
   Used useState, useRef, and useEffect to manage timer and cleanup.
   Added vibration when timer finishes.
   Styled the app using StyleSheet and responsive dimensions.
@@ -18,9 +18,14 @@
 4. Built the app
   Created the account in https://expo.dev/
 ```
-npm install -g eas-cli
-eas login
-npx eas build -p android     //for creating AAB version
-eas build -p android --profile preview     //for creating APK version
+   npm install -g eas-cli
+   eas login
+   npx eas build -p android     //for creating AAB version
+   eas build -p android --profile preview     //for creating APK version
 ```
 
+## How to run
+```
+   npm install
+   npm run web
+```
