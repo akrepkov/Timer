@@ -4,19 +4,16 @@
     npx create-expo-app@latest
     npm run web
 ```
-2. Developed the app
-  Created App.tsx (or App.js) with React Native components.
+2. Created index.tsx with React Native components.
   Defined egg timer buttons with custom images and timer logic using React hooks.
   Used useState, useRef, and useEffect to manage timer and cleanup.
   Added vibration when timer finishes.
   Styled the app using StyleSheet and responsive dimensions.
 
-3. Configured Expo Project
-  Edited app.json to set app name, icon, splash screen, and Android/iOS settings.
+3. Configured Expo Project. Edited app.json to set app name, icon, splash screen, and Android/iOS settings.
   Added icons with transparent backgrounds for better visuals.
 
-4. Built the app
-  Created the account in https://expo.dev/
+4. Built the app, created the account in https://expo.dev/
 ```
    npm install -g eas-cli
    eas login
